@@ -1,0 +1,132 @@
+-- 👉 “Which doctors are overloaded?”
+SELECT 
+    doctors.doctor_id,
+    doctors.first_name,
+    doctors.last_name,
+    COUNT(appointments.appointment_id) AS total_appointment
+FROM
+    Doctors
+        JOIN
+    Appointments ON doctors.doctor_id = appointments.doctor_id
+GROUP BY doctors.doctor_id , doctors.first_name , doctors.last_name
+ORDER BY total_appointment DESC
+LIMIT 5;
+
+-- “Which doctors bring the most revenue?”
+SELECT 
+    doctors.first_name,
+    doctors.last_name,
+    ROUND(SUM(billing.amount)) AS total_revenue
+FROM
+    doctors
+        JOIN
+    appointments ON doctors.doctor_id = appointments.doctor_id
+        JOIN
+    billing ON appointments.patient_id = billing.patient_id
+GROUP BY doctors.first_name , doctors.last_name
+ORDER BY total_revenue DESC;
+
+-- How many patient get sameday treatments, Real-world problem: patient dissatisfaction
+SELECT 
+    patients.first_name,
+    Patients.last_name,
+    DATEDIFF(treatments.treatment_date,
+            appointments.appointment_date) AS days_difference
+FROM
+    Patients
+        JOIN
+    Appointments ON patients.patient_id = appointments.patient_id
+        JOIN
+    treatments ON appointments.appointment_id = treatments.appointment_idS
+ORDER BY days_difference;
+
+
+-- Patients with Frequent Visits (Chronic cases) “Who needs long-term care?”
+SELECT 
+    patients.patient_id,
+    patients.first_name,
+    patients.last_name,
+    COUNT(appointments.appointment_id) AS visit_count
+FROM
+    Patients
+        JOIN
+    appointments ON patients.patient_id = appointments.patient_id
+GROUP BY patients.patient_id , patients.first_name , patients.last_name
+HAVING visit_count > 3
+ORDER BY visit_count DESC;
+
+-- Most Common Treatments Hospital planning & inventory
+SELECT 
+    treatments.treatment_type,
+    treatments.description,
+    COUNT(*) AS frequency
+FROM
+    treatments
+GROUP BY treatments.treatment_type , treatments.description
+ORDER BY frequency DESC
+LIMIT 3;
+
+-- Patients with Pending Bills (Finance tracking)
+SELECT 
+    patients.first_name,
+    patients.last_name,
+    patients.patient_id,
+    ROUND(SUM(billing.amount)) AS total_pending_amount
+FROM
+    patients
+        JOIN
+    billing ON patients.patient_id = billing.patient_id
+WHERE
+    billing.payment_status = 'Pending'
+GROUP BY patients.first_name , patients.last_name , patients.patient_id
+ORDER BY total_pending_amount DESC;
+
+-- Daily Hospital Revenue Trend Business analytics
+SELECT 
+    DATE(billing.bill_date) AS day,
+    ROUND(SUM(billing.amount)) AS total_revenue
+FROM
+    billing
+GROUP BY day
+ORDER BY day;
+-- Doctor Efficiency Score
+SELECT 
+    doctors.first_name,
+    doctors.last_name,
+    COUNT(DISTINCT appointments.appointment_id) AS total_paitents,
+    SUM(billing.amount) AS total_revenue,
+    ROUND(SUM(billing.amount) / COUNT(DISTINCT appointments.appointment_id)) AS revenue_per_paitent
+FROM
+    doctors
+        JOIN
+    appointments ON doctors.doctor_id = appointments.doctor_id
+        JOIN
+    billing ON appointments.patient_id = billing.patient_id
+GROUP BY doctors.first_name , doctors.last_name
+ORDER BY revenue_per_paitent DESC;
+
+-- Full Patient History
+SELECT 
+    patients.patient_id,
+    patients.first_name,
+    patients.last_name,
+    patients.insurance_provider,
+    patients.insurance_number,
+    billing.amount,
+    billing.payment_method,
+    treatments.treatment_type,
+    appointments.reason_for_visit,
+    doctors.first_name AS doctor_firstname,
+    doctors.last_name AS doctor_lastname
+FROM
+    patients
+        LEFT JOIN
+    billing ON patients.patient_id = billing.patient_id
+        LEFT JOIN
+    appointments ON patients.patient_id = appointments.patient_id
+        LEFT JOIN
+    doctors ON appointments.doctor_id = doctors.doctor_id
+        LEFT JOIN
+    treatments ON appointments.appointment_id = treatments.appointment_id
+WHERE
+    patients.patient_id = 'P001';
